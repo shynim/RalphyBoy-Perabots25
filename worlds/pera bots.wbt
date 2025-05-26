@@ -1,4 +1,4 @@
-#VRML_SIM R2023b utf8
+#VRML_SIM R2025a utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
@@ -8,7 +8,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.052863575441089175 -0.021214515333305956 0.9983763752867739 3.903788445338156
-  position 0.03950772197307954 -0.262836634971921 0.056555725579084386
+  position 0.026048390600306566 -0.2484149272374468 0.05424793439938588
 }
 TexturedBackground {
 }
@@ -195,7 +195,8 @@ Solid {
   locked TRUE
 }
 Robot {
-  translation -0.28 -0.56 0.03
+  translation -0.27999999996257036 -0.560000000302224 0.028838397056167985
+  rotation 0.9919240340202747 0.12683339754004075 -1.1809785101042348e-06 1.0176450611750194e-08
   children [
     DEF cam Solid {
       translation 0.05 0 0.017
@@ -234,6 +235,8 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
+        position 4.305089130567782e-14
+        axis 0 1 0
         anchor 0 0.05 -0.01
       }
       device [
@@ -243,7 +246,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0 0.05 -0.01
-        rotation 1 0 0 1.5707996938995747
+        rotation 1 -4.068143056450072e-15 4.068156754352428e-15 1.57079969389954
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
@@ -260,10 +263,14 @@ Robot {
         boundingObject USE Wheel
         physics Physics {
         }
+        linearVelocity 3.7474311316841706e-11 1.89620683155558e-09 -1.9502833277892457e-07
+        angularVelocity -9.968865111076623e-08 1.9724264503079292e-09 -1.8082628240791058e-14
       }
     }
     HingeJoint {
       jointParameters HingeJointParameters {
+        position 6.660887694647954e-14
+        axis 0 1 0
         anchor 0 -0.05 -0.01
       }
       device [
@@ -273,7 +280,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0 -0.05 -0.01
-        rotation 1 0 0 1.5707996938995747
+        rotation 1 -3.1868321653680546e-14 3.1868428957831995e-14 1.5707996938994453
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
@@ -290,6 +297,8 @@ Robot {
         boundingObject USE Wheel
         physics Physics {
         }
+        linearVelocity 3.7472141453725526e-11 1.89178848411013e-09 -1.6121806000919112e-07
+        angularVelocity -9.968891616496537e-08 1.9723102710606238e-09 -1.8082625732233306e-14
       }
     }
   ]
@@ -297,4 +306,6 @@ Robot {
   physics Physics {
   }
   controller "braitenberg"
+  linearVelocity 5.720180292981291e-11 2.89177638643846e-09 -1.9010329348435975e-07
+  angularVelocity -9.968875606390059e-08 1.972948448389391e-09 -1.8082091467702336e-14
 }
