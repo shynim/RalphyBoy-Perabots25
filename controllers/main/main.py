@@ -1,9 +1,12 @@
 # main.py
-from controller import Robot
+from controller import Robot, Display
 from move import MovementController
 
+timestep = 32
 # Create the Robot instance
 robot = Robot()
+camera = robot.getDevice("camera")
+camera.enable(timestep)
 
 # Get the time step of the current world.
 timestep = int(robot.getBasicTimeStep())
