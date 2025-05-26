@@ -1,0 +1,300 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.052863575441089175 -0.021214515333305956 0.9983763752867739 3.903788445338156
+  position 0.03950772197307954 -0.262836634971921 0.056555725579084386
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 2 2
+  floorAppearance PBRAppearance {
+    roughness 1
+    roughnessMap ImageTexture {
+      url [
+        "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/textures/parquetry/mosaic_parquetry_roughness.jpg"
+      ]
+    }
+    metalness 0
+    normalMap ImageTexture {
+      url [
+        "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/textures/parquetry/mosaic_parquetry_normal.jpg"
+      ]
+    }
+    occlusionMap ImageTexture {
+      url [
+        "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/textures/parquetry/mosaic_parquetry_occlusion.jpg"
+      ]
+    }
+  }
+}
+Solid {
+  translation 0.45 -0.73 0.05
+  rotation 0 0 -1 -0.13090030610042527
+  children [
+    DEF obstacle1 Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.1 0.1 0.1
+      }
+    }
+  ]
+  boundingObject USE obstacle1
+  locked TRUE
+}
+Solid {
+  translation 0.666748 -0.198009 0.05
+  rotation 0 0 -1 -1.3089953071795861
+  children [
+    DEF obstacle2 Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.2 0.1 0.1
+      }
+    }
+  ]
+  name "solid(1)"
+  boundingObject USE obstacle2
+  locked TRUE
+}
+Solid {
+  translation 0.36358 0.381911 0.05
+  rotation 0 0 -1 -1.047195307179586
+  children [
+    DEF obstacle3 Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.12 0.1 0.1
+      }
+    }
+  ]
+  name "solid(3)"
+  boundingObject USE obstacle3
+  locked TRUE
+}
+Solid {
+  translation -0.380764 0.661551 0.05
+  rotation 0 0 1 2.09439
+  children [
+    DEF obstacle4 Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.12 0.1 0.1
+      }
+    }
+  ]
+  name "solid(4)"
+  boundingObject USE obstacle4
+  locked TRUE
+}
+Solid {
+  translation -0.545793 -0.0756207 0.05
+  rotation 0 0 1 1.83259
+  children [
+    DEF obstacle5 Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.1 0.3 0.1
+      }
+    }
+  ]
+  name "solid(5)"
+  boundingObject USE obstacle5
+  locked TRUE
+}
+Solid {
+  translation -0.356546 -0.527723 0
+  rotation 0 0 1 2.8797896938995744
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.03 0.51 0.0005
+      }
+    }
+  ]
+  name "solid(6)"
+  locked TRUE
+}
+Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Mesh {
+        url [
+          "../path/outer_path.obj"
+        ]
+      }
+    }
+  ]
+  name "solid(2)"
+  boundingObject Mesh {
+    url [
+      "../path/outer_path.obj"
+    ]
+  }
+  locked TRUE
+}
+Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Mesh {
+        url [
+          "../path/inner_path.obj"
+        ]
+      }
+    }
+  ]
+  name "solid(7)"
+  boundingObject Mesh {
+    url [
+      "../path/inner_path.obj"
+    ]
+  }
+  locked TRUE
+}
+Robot {
+  translation -0.28 -0.56 0.03
+  children [
+    DEF cam Solid {
+      translation 0.05 0 0.017
+      rotation 0 1 0 1.5708
+      children [
+        DEF camera Camera {
+        }
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 0
+            roughness 1
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.005
+            radius 0.005
+          }
+        }
+      ]
+      name "solid(1)"
+    }
+    Pose {
+      children [
+        DEF Body Shape {
+          appearance PBRAppearance {
+            baseColor 0 0.3 1
+            roughness 1
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.05
+            radius 0.05
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        anchor 0 0.05 -0.01
+      }
+      device [
+        RotationalMotor {
+          name "motor_1"
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.05 -0.01
+        rotation 1 0 0 1.5707996938995747
+        children [
+          DEF Wheel Shape {
+            appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.005
+              radius 0.019
+            }
+          }
+        ]
+        boundingObject USE Wheel
+        physics Physics {
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        anchor 0 -0.05 -0.01
+      }
+      device [
+        RotationalMotor {
+          name "motor_2"
+        }
+      ]
+      endPoint Solid {
+        translation 0 -0.05 -0.01
+        rotation 1 0 0 1.5707996938995747
+        children [
+          DEF Wheel Shape {
+            appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.005
+              radius 0.019
+            }
+          }
+        ]
+        boundingObject USE Wheel
+        physics Physics {
+        }
+      }
+    }
+  ]
+  boundingObject USE Body
+  physics Physics {
+  }
+  controller "braitenberg"
+}
