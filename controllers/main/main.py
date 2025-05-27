@@ -1,4 +1,4 @@
-from controller import Robot, Camera
+from controller import Robot, Camera, Keyboard
 import cv2
 import numpy as np
 from move import MovementController
@@ -10,6 +10,10 @@ camera = robot.getDevice("camera")
 camera.enable(TIME_STEP)
 
 move = MovementController(robot)
+SPEED = 3.0
+
+keyboard = Keyboard()
+keyboard.enable(TIME_STEP)
 
 while robot.step(TIME_STEP) != -1:
     image = camera.getImage()
@@ -69,6 +73,17 @@ while robot.step(TIME_STEP) != -1:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     
-    move.move(2.0, 2.0)
+    key = keyboard.getKey()
+    
+    if key == Keyboard.UP:
+        move.move(SPEED, SPEED)
+    elif key == Keyboard.DOWN:
+        move.move(-SPEED, -SPEED)
+    elif key == Keyboard.LEFT:
+        move.move(-SPEED, SPEED)
+    elif key == Keyboard.RIGHT:
+        move.move(SPEED, -SPEED)
+    else:
+        move.stop()
 
 cv2.destroyAllWindows()
