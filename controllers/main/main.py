@@ -53,9 +53,15 @@ def handle_keyboard_input(key):
 
 cv2.namedWindow("Webots Vision Grid", cv2.WINDOW_NORMAL)
 
+MAXSPEED = 5.0
+BASESPEED = 3.0
+left_speed = BASESPEED
+right_speed = BASESPEED
+
+
 while robot.step(TIME_STEP) != -1:
-    key = keyboard.getKey()
-    handle_keyboard_input(key)
+    # key = keyboard.getKey()
+    # handle_keyboard_input(key)
 
     image = camera.getImage()
     img_array = np.frombuffer(image, np.uint8).reshape((height, width, 4))
@@ -65,12 +71,54 @@ while robot.step(TIME_STEP) != -1:
     black_mask, black_contours = detect_black_objects(img_bgr)
     red_mask, red_contours = detect_red_lines(img_bgr)
 
-    # Overlay contours
+    # Overlay image and contour drawing
     overlay = img_bgr.copy()
+
     if black_contours:
         cv2.drawContours(overlay, black_contours[:3], -1, (0, 255, 255), 2)
+
+        # --- Step 1: Find vertical edge midpoint ---
+        left_edge_ys = []
+        for contour in black_contours:
+            for point in contour:
+                x, y = point[0]
+                if x <= 0:
+                    left_edge_ys.append(y)
+
+        if left_edge_ys:
+            mid_y = int(np.mean(left_edge_ys))
+            mid_x = width // 2
+
+            # Draw guide lines
+            cv2.line(overlay, (0, mid_y), (width, mid_y), (0, 255, 0), 2)      # Horizontal
+            cv2.line(overlay, (mid_x, 0), (mid_x, height), (0, 255, 0), 1)     # Vertical
+
+            # --- Step 2: Calculate left and right errors ---
+            left_dy_squares = []
+            right_dy_squares = []
+
+            for contour in black_contours:
+                for point in contour:
+                    x, y = point[0]
+                    if y > mid_y:  # Only below green line
+                        dy = y - mid_y
+                        if x < mid_x:
+                            left_dy_squares.append(dy)
+                        elif x > mid_x:
+                            right_dy_squares.append(dy)
+
+            # Avoid division by zero
+            left_error = (sum(left_dy_squares) / len(left_dy_squares)) if left_dy_squares else 0
+            right_error = (sum(right_dy_squares) / len(right_dy_squares)) if right_dy_squares else 0
+
+            # --- Step 3: Display errors on the overlay image ---
+            error_text = f"Left Error: {left_error:.1f} | Right Error: {right_error:.1f} | Total Error: {left_error - right_error:.1f}"
+            cv2.putText(overlay, error_text, (10, height - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 255, 0), 1, cv2.LINE_AA)
+
     if red_contours:
         cv2.drawContours(overlay, red_contours[:1], -1, (0, 0, 255), 2)
+
 
     # Convert masks to BGR for consistent stacking
     black_bgr = cv2.cvtColor(black_mask, cv2.COLOR_GRAY2BGR)
@@ -95,5 +143,15 @@ while robot.step(TIME_STEP) != -1:
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+    
+    # --- Step 4: P Controller for movement ---
+    kp = 0.1  # Proportional gain, tune as needed
+
+    total_error = left_error - right_error
+    
+    left_speed = max(-MAXSPEED, min(MAXSPEED, left_speed))
+    right_speed = max(-MAXSPEED, min(MAXSPEED, right_speed))
+    
+    movement.move(BASESPEED + kp * total_error, BASESPEED - kp * total_error)
 
 cv2.destroyAllWindows()
