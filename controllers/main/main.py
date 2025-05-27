@@ -11,7 +11,6 @@ camera.enable(TIME_STEP)
 
 keyboard = Keyboard()
 keyboard.enable(TIME_STEP)
-SPEED = 3.0
 
 movement = MovementController(robot)
 
@@ -96,18 +95,5 @@ while robot.step(TIME_STEP) != -1:
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    
-    key = keyboard.getKey()
-    
-    if key == Keyboard.UP:
-        movement.move(SPEED, SPEED)
-    elif key == Keyboard.DOWN:
-        movement.move(-SPEED, -SPEED)
-    elif key == Keyboard.LEFT:
-        movement.move(-SPEED, SPEED)
-    elif key == Keyboard.RIGHT:
-        movement.move(SPEED, -SPEED)
-    else:
-        movement.stop()
 
 cv2.destroyAllWindows()
