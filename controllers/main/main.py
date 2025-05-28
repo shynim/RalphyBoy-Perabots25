@@ -55,8 +55,13 @@ cv2.namedWindow("Webots Vision Grid", cv2.WINDOW_NORMAL)
 
 MAXSPEED = 5.0
 BASESPEED = 3.0
-left_speed = BASESPEED
-right_speed = BASESPEED
+
+kp = 0.1
+kd = 0.1
+cur_error = 0.0
+pre_error = 0.0
+
+
 
 
 while robot.step(TIME_STEP) != -1:
@@ -161,13 +166,14 @@ while robot.step(TIME_STEP) != -1:
         break
     
     # --- Step 4: P Controller for movement ---
-    kp = 0.1  # Proportional gain, tune as needed
 
-    total_error = left_error - right_error
+    cur_error = left_error - right_error
+    delta_error = cur_error - pre_error
+
+    correction = kp * cur_error + kd * delta_error
+
+    movement.move(BASESPEED + correction, BASESPEED - correction)
     
-    left_speed = max(-MAXSPEED, min(MAXSPEED, left_speed))
-    right_speed = max(-MAXSPEED, min(MAXSPEED, right_speed))
-    
-    movement.move(BASESPEED + kp * total_error, BASESPEED - kp * total_error)
+    pre_error = cur_error
 
 cv2.destroyAllWindows()
