@@ -1,1 +1,5 @@
 worlds/.pera bots.wbproj
+controllers/.vscode/launch.json
+controllers/.vscode/settings.json
+controllers/main/__pycache__/move.cpython-311.pyc
+controllers/main/__pycache__/move.cpython-313.pyc
