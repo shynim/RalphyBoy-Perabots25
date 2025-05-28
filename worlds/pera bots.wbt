@@ -195,8 +195,8 @@ Solid {
   locked TRUE
 }
 Robot {
-  translation -0.43907494273095743 -0.48044694580546515 0.02881052982565131
-  rotation -0.03875639608455801 -0.11165484277632237 -0.9929910059245911 0.6724571217454722
+  translation -0.27104421800287076 -0.5568842913877121 0.02881048858876813
+  rotation -0.03899313570440089 0.006115501155008669 -0.9992207644027227 -2.830693163612947
   children [
     DEF cam Solid {
       translation 0.049 0 0.019
@@ -238,7 +238,7 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 929.4989772694953
+        position 1210.6141369581499
         axis 0 1 0
         anchor 0 0.05 -0.01
       }
@@ -249,7 +249,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0 0.05 -0.01
-        rotation 0.9589145034255931 -0.20060247272335474 0.20060314817400993 1.6127407493128223
+        rotation -0.39812325925276565 0.6486505365104435 -0.6486527205883508 3.8993652411183004
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
@@ -266,13 +266,13 @@ Robot {
         boundingObject USE Wheel
         physics Physics {
         }
-        linearVelocity 0.13434952941242087 -0.0927188799454083 -3.5523628104367773e-06
-        angularVelocity 5.027756561511628 7.287227784835917 -2.125805428859287
+        linearVelocity -0.05426465513831685 0.01744528214571761 -3.04305419440543e-08
+        angularVelocity -0.9181224588582223 -2.8560552813535116 0.00022689723549589134
       }
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 1015.8212006600573
+        position 1264.8545378841732
         axis 0 1 0
         anchor 0 -0.05 -0.01
       }
@@ -283,7 +283,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0 -0.05 -0.01
-        rotation 0.3927940010806522 -0.6502730292391052 0.6502752187799027 2.393037114748385
+        rotation -0.4382442382601358 -0.6355860552305391 0.6355881953185374 3.9676600637646855
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
@@ -300,8 +300,8 @@ Robot {
         boundingObject USE Wheel
         physics Physics {
         }
-        linearVelocity -0.04038495868383894 0.027641016728724932 5.813557677002108e-06
-        angularVelocity -1.6120823658850147 -2.354323748978212 -2.119815100831645
+        linearVelocity -0.054265101706051436 0.017443173851107604 2.4540798304071735e-08
+        angularVelocity -0.9181282980563176 -2.856053394772163 0.000279853685495054
       }
     }
   ]
@@ -309,6 +309,6 @@ Robot {
   physics Physics {
   }
   controller "main"
-  linearVelocity 0.04792051241143256 -0.031176620012476005 1.109563744198084e-06
-  angularVelocity -9.515209388899873e-05 3.093767861451157e-05 -2.121521852358133
+  linearVelocity -0.05426489122394881 0.01744422827427497 -2.8825295265088976e-09
+  angularVelocity 5.066109972814186e-07 -2.568343420332829e-07 3.9499874040264765e-06
 }

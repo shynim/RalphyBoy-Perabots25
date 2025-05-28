@@ -79,33 +79,49 @@ while robot.step(TIME_STEP) != -1:
 
         # --- Step 1: Find vertical edge midpoint ---
         left_edge_ys = []
+        right_edge_ys = []
+
         for contour in black_contours:
             for point in contour:
                 x, y = point[0]
                 if x <= 0:
                     left_edge_ys.append(y)
-
+                elif x >= width - 1:
+                    right_edge_ys.append(y)
+                    
+        # Determine which edge to use (more points)
+        if len(left_edge_ys) >= len(right_edge_ys):
+            dominant_edge_ys = left_edge_ys
+            edge_name = "Left"
+        else:
+            dominant_edge_ys = right_edge_ys
+            edge_name = "Right"        
+        
         if left_edge_ys:
-            mid_y = int(np.mean(left_edge_ys))
+            mid_y = int(np.mean(dominant_edge_ys))
             mid_x = width // 2
 
             # Draw guide lines
             cv2.line(overlay, (0, mid_y), (width, mid_y), (0, 255, 0), 2)      # Horizontal
             cv2.line(overlay, (mid_x, 0), (mid_x, height), (0, 255, 0), 1)     # Vertical
-
-            # --- Step 2: Calculate left and right errors ---
+            
+            # --- Step 2: Calculate left and right errors (excluding red line areas) ---
             left_dy_squares = []
             right_dy_squares = []
-
+            
             for contour in black_contours:
                 for point in contour:
                     x, y = point[0]
+                    # Skip points on red lines
+                    if red_mask[y, x] != 0:
+                        continue
                     if y > mid_y:  # Only below green line
                         dy = y - mid_y
                         if x < mid_x:
                             left_dy_squares.append(dy)
                         elif x > mid_x:
                             right_dy_squares.append(dy)
+
 
             # Avoid division by zero
             left_error = (sum(left_dy_squares) / len(left_dy_squares)) if left_dy_squares else 0

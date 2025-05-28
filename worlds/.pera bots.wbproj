@@ -7,4 +7,4 @@ centralWidgetVisible: 1
 orthographicViewHeight: 1
 textFiles: -1
 globalOptionalRendering: CameraFrustums
-renderingDevicePerspectives: robot:camera;0;0.335938;0;0
+renderingDevicePerspectives: robot:camera;1;0.335938;0;0
