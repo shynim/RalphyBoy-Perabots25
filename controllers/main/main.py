@@ -53,11 +53,11 @@ def handle_keyboard_input(key):
 
 cv2.namedWindow("Webots Vision Grid", cv2.WINDOW_NORMAL)
 
-MAXSPEED = 5.0
-BASESPEED = 3.0
+MAXSPEED = 10.0
+BASESPEED = 6.0
 
 kp = 0.1
-kd = 0.1
+kd = 0.001
 cur_error = 0.0
 pre_error = 0.0
 
@@ -171,9 +171,11 @@ while robot.step(TIME_STEP) != -1:
     delta_error = cur_error - pre_error
 
     correction = kp * cur_error + kd * delta_error
+    ls = np.clip(BASESPEED + correction, -MAXSPEED, MAXSPEED)
+    rs = np.clip(BASESPEED - correction, -MAXSPEED, MAXSPEED)
 
-    movement.move(BASESPEED + correction, BASESPEED - correction)
-    
+    movement.move(ls, rs)
+
     pre_error = cur_error
 
 cv2.destroyAllWindows()
