@@ -7,8 +7,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.30732812369829876 -0.05644991998600633 0.9499278030027632 3.487088659087842
-  position 0.3212909953102864 -0.23349031836769563 0.8018902887547851
+  orientation 0.260751478223824 -0.8310157167262497 -0.4913466649505703 5.14653443840537
+  position -2.5630106348834243 -1.3864165413070615 4.648685969341095
 }
 TexturedBackground {
 }
@@ -195,8 +195,8 @@ Solid {
   locked TRUE
 }
 Robot {
-  translation -0.4857756557870738 -0.5958360575687202 0.02881048757944874
-  rotation -0.5168569221608366 -0.33394294970786165 0.7882518812884873 0.126821
+  translation 0.651493351033094 0.35266268779055726 0.028810631356573
+  rotation -0.038984275697608865 0.02527994143213579 -0.9989199921963323 -1.9917728266890578
   children [
     DEF cam Solid {
       translation 0.049 0 0.019
@@ -238,18 +238,22 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 96.91882652600042
+        position 2331.0548515757187
         axis 0 1 0
         anchor 0 0.05 -0.01
       }
       device [
         RotationalMotor {
           name "motor_1"
+          maxVelocity 20
+        }
+        PositionSensor {
+          name "enc_1"
         }
       ]
       endPoint Solid {
         translation 0 0.05 -0.01
-        rotation -0.16711868122700654 -0.6971614136335299 0.6971637610529139 3.4727684449610288
+        rotation 0.5741136978790674 -0.579139759886487 0.5787837250875711 2.0978831373876696
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
@@ -270,18 +274,22 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 193.78800016757472
+        position 2567.943756842526
         axis 0 1 0
         anchor 0 -0.05 -0.01
       }
       device [
         RotationalMotor {
           name "motor_2"
+          maxVelocity 20
+        }
+        PositionSensor {
+          name "enc_2"
         }
       ]
       endPoint Solid {
         translation 0 -0.05 -0.01
-        rotation -0.7945860571770379 0.4293202513939951 -0.4293216969625995 4.484451430218295
+        rotation -0.6128194213453882 -0.5586001396380279 0.5589438619559923 4.240251185776776
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
