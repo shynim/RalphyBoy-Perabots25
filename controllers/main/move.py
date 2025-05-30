@@ -17,8 +17,8 @@ class MovementController:
         self.left_motor.setVelocity(0.0)
         self.right_motor.setVelocity(0.0)
 
-        self.left_enc = robot.getPositionSensor('enc_1')
-        self.right_enc = robot.getPositionSensor('enc_2')
+        self.left_enc = robot.getDevice('enc_1')
+        self.right_enc = robot.getDevice('enc_2')
 
         self.left_enc.enable(TIME_STEP)
         self.right_enc.enable(TIME_STEP)

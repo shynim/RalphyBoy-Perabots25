@@ -113,14 +113,10 @@ MAXSPEED = 10.0
 BASESPEED = 6.0
 
 kp = 0.1
-kd = 0.1
 kd = 0.001
+
 cur_error = 0.0
 pre_error = 0.0
-
-BASESPEED = 3.0
-left_speed = BASESPEED
-right_speed = BASESPEED
 
 ps_values = [0, 0]  
 dist_values = [0.0, 0.0]
@@ -241,11 +237,6 @@ while robot.step(TIME_STEP) != -1:
     movement.move(ls, rs)
 
     pre_error = cur_error
-    
-    ps_values[0] = movement.get_left_enc()
-    ps_values[1] = movement.get_right_enc()
-    
-    movement.move(BASESPEED + kp * total_error, BASESPEED - kp * total_error)
     
     ps_values[0] = movement.get_left_enc()
     ps_values[1] = movement.get_right_enc()
