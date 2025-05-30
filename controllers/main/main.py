@@ -23,6 +23,12 @@ keyboard.enable(TIME_STEP)
 
 movement = MovementController(robot)
 
+lidar = robot.getDevice('lidar')
+lidar.enable(TIME_STEP)
+lidar.enablePointCloud()
+lidar_fov = math.pi  # 180 degrees in radians
+lidar_resolution = lidar.getHorizontalResolution()  # Number of points per scan
+
 width = camera.getWidth()
 height = camera.getHeight()
 
@@ -44,30 +50,74 @@ x_traj, y_traj = [], []
 traj_line, = ax.plot([], [], 'b-', linewidth=1)  # Trajectory line
 robot_marker, = ax.plot([], [], 'ro', markersize=8)  # Current position
 heading_line, = ax.plot([], [], 'r-', linewidth=2)  # Heading indicator
+lidar_points, = ax.plot([], [], 'g.', markersize=3, alpha=0.7, label='LiDAR Points')
+ax.legend()
 
-def update_plot(x, y, theta):
-    """Update the trajectory plot with meter-scale accuracy"""
+# For accumulating LiDAR points over time
+all_lidar_points = [[], []]
+
+def update_plot(x, y, theta, lidar_data=None):
+    """Update the plot with robot position and LiDAR data"""
+    global all_lidar_points
+    
     x_traj.append(x)
     y_traj.append(y)
     
-    # Update plot elements
+    # Update trajectory
     traj_line.set_data(x_traj, y_traj)
     robot_marker.set_data([x], [y])
     
-    # Update heading arrow (20cm long)
-    arrow_length = 0.2
+    # Update heading arrow
+    arrow_length = 0.3
     heading_line.set_data(
-        [x, x + arrow_length * np.cos(theta)],
-        [y, y + arrow_length * np.sin(theta)]
+        [x, x + arrow_length * math.cos(theta)],
+        [y, y + arrow_length * math.sin(theta)]
     )
     
-    # Keep arena bounds but auto-center view
-    current_center_x = (min(x_traj) + max(x_traj))/2
-    current_center_y = (min(y_traj) + max(y_traj))/2
-    view_margin = 1.2  # 20% margin beyond arena
+    # Update LiDAR points if data provided
+    if lidar_data is not None:
+        current_scan_x = []
+        current_scan_y = []
+        
+        for i in range(len(lidar_data)):
+            angle = (i / lidar_resolution - 0.5) * lidar_fov  # -90° to +90°
+            distance = lidar_data[i]
+            
+            # Skip invalid measurements
+            if math.isinf(distance) or distance > lidar.getMaxRange():
+                continue
+                
+            # Convert to robot coordinates (x forward, y left)
+            x_rel = distance * math.cos(angle)
+            y_rel = distance * math.sin(angle)
+            
+            # Transform to world coordinates
+            x_world = x + x_rel * math.cos(theta) - y_rel * math.sin(theta)
+            y_world = y + x_rel * math.sin(theta) + y_rel * math.cos(theta)
+            
+            current_scan_x.append(x_world)
+            current_scan_y.append(y_world)
+        
+        # Add to accumulated points
+        all_lidar_points[0].extend(current_scan_x)
+        all_lidar_points[1].extend(current_scan_y)
+        
+        # Update plot with all accumulated points
+        lidar_points.set_data(all_lidar_points[0], all_lidar_points[1])
     
-    ax.set_xlim(current_center_x-view_margin, current_center_x+view_margin)
-    ax.set_ylim(current_center_y-view_margin, current_center_y+view_margin)
+    # Auto-scale view based on trajectory and LiDAR points
+    if len(x_traj) > 0 or len(all_lidar_points[0]) > 0:
+        all_x = x_traj + all_lidar_points[0]
+        all_y = y_traj + all_lidar_points[1]
+        
+        if all_x:  # Check if list is not empty
+            min_x, max_x = min(all_x), max(all_x)
+            min_y, max_y = min(all_y), max(all_y)
+            
+            # Add 20% margin
+            margin = 0.2 * max(max_x - min_x, max_y - min_y, 1.0)
+            ax.set_xlim(min_x - margin, max_x + margin)
+            ax.set_ylim(min_y - margin, max_y + margin)
     
     plt.draw()
     plt.pause(0.001)
@@ -260,9 +310,9 @@ while robot.step(TIME_STEP) != -1:
     robot_pose[0] += vx * dt  
     robot_pose[1] += vy * dt  
     
-    print("{}".format(robot_pose))
+    lidar_data = lidar.getRangeImage()
     
-    update_plot(robot_pose[0], robot_pose[1], robot_pose[2])
+    update_plot(robot_pose[0], robot_pose[1], robot_pose[2], lidar_data)
     
     for ind in range(2):
         last_ps_values[ind] = ps_values[ind]
