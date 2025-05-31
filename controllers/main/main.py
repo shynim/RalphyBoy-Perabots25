@@ -3,10 +3,10 @@ from controller import Robot, Camera, Keyboard
 import cv2
 import numpy as np
 from move import MovementController
-
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.patches import Rectangle
+import os
+from datetime import datetime
 
 TIME_STEP = 32
 
@@ -27,82 +27,81 @@ lidar = robot.getDevice('lidar')
 lidar.enable(TIME_STEP)
 lidar.enablePointCloud()
 lidar_fov = math.pi  # 180 degrees in radians
-lidar_resolution = lidar.getHorizontalResolution()  # Number of points per scan
+lidar_resolution = lidar.getHorizontalResolution()
 
 width = camera.getWidth()
 height = camera.getHeight()
 
-# Initialize plot for 2m×2m arena
+plt.ion()
 plt.figure(figsize=(8, 8))
 ax = plt.gca()
-ax.set_xlim(-1.1, 1.1)  # 10cm margin around 2m arena
+ax.set_xlim(-1.1, 1.1)
 ax.set_ylim(-1.1, 1.1)
 ax.set_aspect('equal')
 ax.grid(True)
 ax.set_title('2m×2m Arena - Robot Trajectory')
-
-# Draw arena boundaries (2m×2m centered at 0,0)
 arena = Rectangle((-1, -1), 2, 2, linewidth=2, edgecolor='k', facecolor='none')
 ax.add_patch(arena)
 
-# Initialize trajectory storage
 x_traj, y_traj = [], []
-traj_line, = ax.plot([], [], 'b-', linewidth=1)  # Trajectory line
-robot_marker, = ax.plot([], [], 'ro', markersize=8)  # Current position
-heading_line, = ax.plot([], [], 'r-', linewidth=2)  # Heading indicator
+traj_line, = ax.plot([], [], 'b-', linewidth=1)
+robot_marker, = ax.plot([], [], 'ro', markersize=8)
+heading_line, = ax.plot([], [], 'r-', linewidth=2)
 lidar_points, = ax.plot([], [], 'g.', markersize=3, alpha=0.7, label='LiDAR Points')
 ax.legend()
 
-# For accumulating LiDAR points over time
 all_lidar_points = [[], []]
 
+output_dir = "robot_output"
+os.makedirs(output_dir, exist_ok=True)
+
+step_counter = 0
+save_interval = 100
+
+
+def save_data():
+    filename = os.path.join(output_dir, "trajectory_lidar_data.npz")
+    np.savez(filename,
+             x_traj=np.array(x_traj),
+             y_traj=np.array(y_traj),
+             lidar_x=np.array(all_lidar_points[0]),
+             lidar_y=np.array(all_lidar_points[1]))
+    print(f"[INFO] Data saved to: {filename}")
+
+
 def update_plot(x, y, theta, lidar_data=None):
-    """Update the plot with robot position and LiDAR data"""
     global all_lidar_points
-    
+
     x_traj.append(x)
     y_traj.append(y)
-    
-    # Update trajectory
+
     traj_line.set_data(x_traj, y_traj)
     robot_marker.set_data([x], [y])
-    
-    # Update heading arrow
+
     arrow_length = 0.3
     heading_line.set_data(
         [x, x + arrow_length * math.cos(theta)],
         [y, y + arrow_length * math.sin(theta)]
     )
-    
-    # Update LiDAR points if data provided
+
     if lidar_data is not None:
         current_scan_x = []
         current_scan_y = []
-        
+
         for i in range(len(lidar_data)):
-            angle = (i / lidar_resolution - 0.5) * lidar_fov  # -90° to +90°
+            angle = (i / lidar_resolution - 0.5) * lidar_fov
             distance = lidar_data[i]
-            
-            # Skip invalid measurements
             if math.isinf(distance) or distance > lidar.getMaxRange():
                 continue
-                
-            # Convert to robot coordinates (x forward, y left)
             x_rel = distance * math.cos(angle)
             y_rel = distance * math.sin(angle)
-            
-            # Transform to world coordinates
             x_world = x + x_rel * math.cos(theta) - y_rel * math.sin(theta)
             y_world = y + x_rel * math.sin(theta) + y_rel * math.cos(theta)
-            
             current_scan_x.append(x_world)
             current_scan_y.append(y_world)
-        
-        # Add to accumulated points
+
         all_lidar_points[0].extend(current_scan_x)
         all_lidar_points[1].extend(current_scan_y)
-        
-        # Update plot with all accumulated points
         lidar_points.set_data(all_lidar_points[0], all_lidar_points[1])
     
     # Auto-scale view based on trajectory and LiDAR points
@@ -131,6 +130,7 @@ def detect_black_objects(image):
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
     return black_mask, contours
 
+
 def detect_red_lines(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     lower_red1 = np.array([0, 120, 70])
@@ -145,18 +145,6 @@ def detect_red_lines(image):
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
     return red_mask, contours
 
-def handle_keyboard_input(key):
-    if key == Keyboard.UP:
-        movement.move(5.0, 5.0)
-    elif key == Keyboard.DOWN:
-        movement.move(-5.0, -5.0)
-    elif key == Keyboard.LEFT:
-        movement.move(-3.0, 3.0)
-    elif key == Keyboard.RIGHT:
-        movement.move(3.0, -3.0)
-    else:
-        movement.move(0.0, 0.0)
-
 cv2.namedWindow("Webots Vision Grid", cv2.WINDOW_NORMAL)
 
 MAXSPEED = 10.0
@@ -170,14 +158,10 @@ pre_error = 0.0
 
 ps_values = [0, 0]  
 dist_values = [0.0, 0.0]
-
 last_ps_values = [0, 0] 
 robot_pose = [0, 0, 0]
 
 while robot.step(TIME_STEP) != -1:
-    # key = keyboard.getKey()
-    # handle_keyboard_input(key)
-
     image = camera.getImage()
     img_array = np.frombuffer(image, np.uint8).reshape((height, width, 4))
     img_bgr = cv2.cvtColor(img_array, cv2.COLOR_BGRA2BGR)
@@ -195,7 +179,6 @@ while robot.step(TIME_STEP) != -1:
         # --- Step 1: Find vertical edge midpoint ---
         left_edge_ys = []
         right_edge_ys = []
-
         for contour in black_contours:
             for point in contour:
                 x, y = point[0]
@@ -223,22 +206,17 @@ while robot.step(TIME_STEP) != -1:
             # --- Step 2: Calculate left and right errors (excluding red line areas) ---
             left_dy_squares = []
             right_dy_squares = []
-            
             for contour in black_contours:
                 for point in contour:
                     x, y = point[0]
-                    # Skip points on red lines
                     if red_mask[y, x] != 0:
                         continue
-                    if y > mid_y:  # Only below green line
+                    if y > mid_y:
                         dy = y - mid_y
                         if x < mid_x:
                             left_dy_squares.append(dy)
                         elif x > mid_x:
                             right_dy_squares.append(dy)
-
-
-            # Avoid division by zero
             left_error = (sum(left_dy_squares) / len(left_dy_squares)) if left_dy_squares else 0
             right_error = (sum(right_dy_squares) / len(right_dy_squares)) if right_dy_squares else 0
 
@@ -279,43 +257,47 @@ while robot.step(TIME_STEP) != -1:
 
     cur_error = left_error - right_error
     delta_error = cur_error - pre_error
-
     correction = kp * cur_error + kd * delta_error
     ls = np.clip(BASESPEED + correction, -MAXSPEED, MAXSPEED)
     rs = np.clip(BASESPEED - correction, -MAXSPEED, MAXSPEED)
 
     movement.move(ls, rs)
-
     pre_error = cur_error
-    
+
     ps_values[0] = movement.get_left_enc()
     ps_values[1] = movement.get_right_enc()
-    
+
     for ind in range(2):
         diff = ps_values[ind] - last_ps_values[ind]
-        
         if abs(diff) < 0.001:
             diff = 0
-            ps_values[ind] = last_ps_values[ind]  
-        dist_values[ind] = diff * encoder_unit 
+            ps_values[ind] = last_ps_values[ind]
+        dist_values[ind] = diff * encoder_unit
 
-    v = (dist_values[0] + dist_values[1]) / 2.0  
-    w = (dist_values[0] - dist_values[1]) / distance_between_wheels  
+    v = (dist_values[0] + dist_values[1]) / 2.0
+    w = (dist_values[0] - dist_values[1]) / distance_between_wheels
+    dt = 1
+    robot_pose[2] += (w * dt)
+    vx = v * math.cos(robot_pose[2])
+    vy = v * math.sin(robot_pose[2])
+    robot_pose[0] += vx * dt
+    robot_pose[1] += vy * dt
 
-    dt = 1  
-    robot_pose[2] += (w * dt)  
-
-    vx = v * math.cos(robot_pose[2])  
-    vy = v * math.sin(robot_pose[2])  
-    robot_pose[0] += vx * dt  
-    robot_pose[1] += vy * dt  
-    
     lidar_data = lidar.getRangeImage()
-    
     update_plot(robot_pose[0], robot_pose[1], robot_pose[2], lidar_data)
-    
+
     for ind in range(2):
         last_ps_values[ind] = ps_values[ind]
+
+    step_counter += 1
+    if step_counter % save_interval == 0:
+        save_data()
+
+    key = keyboard.getKey()
+    if key == ord('s') or key == ord('S'):
+        save_data()
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 cv2.destroyAllWindows()
 plt.ioff()
