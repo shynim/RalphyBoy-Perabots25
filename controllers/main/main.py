@@ -56,7 +56,7 @@ output_dir = "robot_output"
 os.makedirs(output_dir, exist_ok=True)
 
 step_counter = 0
-save_interval = 100
+save_interval = 20
 
 
 def save_data():
