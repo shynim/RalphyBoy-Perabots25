@@ -3,6 +3,7 @@ import cv2
 import os
 import math
 
+
 # --- Configuration ---
 NPZ_FILE = 'robot_output/trajectory_lidar_data.npz'
 MAP_SIZE_METERS = 2.0
@@ -124,119 +125,44 @@ print(f"Populated grid with {valid_lidar_points_count} lidar points within map b
 if valid_lidar_points_count == 0:
     print("No lidar points fell within the defined map boundaries. Showing empty map.")
 
-# --- 5. Process Contours, Bounding Boxes, and Midpoints ---
-output_image = cv2.cvtColor(grid_map, cv2.COLOR_GRAY2BGR)
-contours, hierarchy = cv2.findContours(grid_map, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-print(f"Found {len(contours)} potential wall segments (contours).")
+from scipy.signal import convolve2d
+try:
+    from cv2.ximgproc import thinning
+    thinning_available = True
+except ImportError:
+    from skimage.morphology import skeletonize
+    thinning_available = False
 
-# Store data for midpoints: [{'coord': (x,y), 'box_idx': int, 'original_idx_in_list': int}, ...]
-endpoints_data = []
-processed_boxes_rects = [] # Store rects of boxes for which endpoints are generated
+# --- 5. Skeletonize Wall Map ---
+print("Skeletonizing wall map...")
+if thinning_available:
+    skeleton = thinning(grid_map)
+else:
+    from skimage.util import invert
+    skeleton = skeletonize(grid_map > 0).astype(np.uint8) * 255
+print("Skeletonization complete.")
 
-for box_idx, contour in enumerate(contours):
-    if cv2.contourArea(contour) < MIN_CONTOUR_AREA_PIXELS:
-        continue
+# Convert to BGR for visualization
+output_image = cv2.cvtColor(skeleton, cv2.COLOR_GRAY2BGR)
 
-    rect = cv2.minAreaRect(contour) # ((center_x, center_y), (width, height), angle)
-    box_corners = cv2.boxPoints(rect) # 4 corner points
-    box_corners_int = np.intp(box_corners)
-    cv2.drawContours(output_image, [box_corners_int], 0, COLOR_BOUNDING_BOX, 1)
-    processed_boxes_rects.append(rect) # Store the rect
+# --- 6. Detect Endpoints in Skeleton ---
+print("Detecting endpoints...")
+# Define kernel to count 8-neighbors
+neighbor_kernel = np.array([[1,1,1],
+                            [1,10,1],
+                            [1,1,1]])
 
-    # Get width and height from the rect
-    # rect[1][0] is width, rect[1][1] is height as defined by minAreaRect
-    # The angle rect[2] is the rotation of the "width" side relative to horizontal
-    width, height = rect[1]
+neighbor_count = convolve2d((skeleton > 0).astype(np.uint8), np.ones((3,3), dtype=int), mode='same')
+# Endpoints: pixel is 'on' and has exactly 5 (1 self + 4 neighbors)
+endpoint_mask = ((skeleton > 0) & (neighbor_count == 2))
 
-    # Determine shorter side and its midpoints
-    # Points are p0, p1, p2, p3 in clockwise order from boxPoints
-    # Side p0-p1, p1-p2, p2-p3, p3-p0
-    # Lengths of adjacent sides
-    len_s01 = np.linalg.norm(box_corners[0] - box_corners[1])
-    len_s12 = np.linalg.norm(box_corners[1] - box_corners[2])
+endpoint_coords = np.argwhere(endpoint_mask)
 
-    current_box_endpoints = []
-    # Ensure the shorter side is of a minimum length
-    if min(width, height) < MIN_SIDE_LENGTH_FOR_ENDPOINTS_PIXELS :
-        continue # Skip this box for endpoint generation
+for (r, c) in endpoint_coords:
+    cv2.circle(output_image, (c, r), 2, COLOR_MIDPOINTS, -1)
 
-    # Check if width from rect[1][0] corresponds to len_s01 or len_s12
-    # This helps determine which pair of sides are the "width" sides vs "height" sides
-    # We want midpoints of the pair of sides that are shorter.
-    if width <= height: # "width" (rect[1][0]) is the shorter dimension or equal
-        # We need to identify which actual segment (p0p1 or p1p2) corresponds to 'width'
-        if abs(len_s01 - width) < abs(len_s12 - width): # s01 is the "width" side
-            e1 = (box_corners[0] + box_corners[1]) / 2.0
-            e2 = (box_corners[2] + box_corners[3]) / 2.0
-        else: # s12 is the "width" side
-            e1 = (box_corners[1] + box_corners[2]) / 2.0
-            e2 = (box_corners[3] + box_corners[0]) / 2.0
-        current_box_endpoints.extend([e1, e2])
-    else: # "height" (rect[1][1]) is the shorter dimension
-        if abs(len_s01 - height) < abs(len_s12 - height): # s01 is the "height" side
-            e1 = (box_corners[0] + box_corners[1]) / 2.0
-            e2 = (box_corners[2] + box_corners[3]) / 2.0
-        else: # s12 is the "height" side
-            e1 = (box_corners[1] + box_corners[2]) / 2.0
-            e2 = (box_corners[3] + box_corners[0]) / 2.0
-        current_box_endpoints.extend([e1, e2])
+print(f"Detected {len(endpoint_coords)} wall endpoints.")
 
-    for ep_coord in current_box_endpoints:
-        endpoints_data.append({
-            'coord': tuple(ep_coord),
-            'box_idx': box_idx, # Index of the original contour
-            'original_idx_in_list': len(endpoints_data) # Its future index in this list
-        })
-        cv2.circle(output_image, (int(ep_coord[0]), int(ep_coord[1])), 2, COLOR_MIDPOINTS, -1)
-
-print(f"Identified {len(processed_boxes_rects)} significant boxes.")
-print(f"Generated {len(endpoints_data)} midpoints for connection.")
-
-# --- 6. Connect Midpoints ---
-num_endpoints = len(endpoints_data)
-is_endpoint_connected = [False] * num_endpoints
-connections_made = 0
-
-for i in range(num_endpoints):
-    if is_endpoint_connected[i]:
-        continue
-
-    ep_A_data = endpoints_data[i]
-    ep_A_coord = ep_A_data['coord']
-    ep_A_box_idx = ep_A_data['box_idx']
-
-    min_dist_sq = float('inf')
-    best_ep_B_idx = -1
-
-    for j in range(num_endpoints):
-        if i == j or is_endpoint_connected[j]:
-            continue
-
-        ep_B_data = endpoints_data[j]
-        ep_B_coord = ep_B_data['coord']
-        ep_B_box_idx = ep_B_data['box_idx']
-
-        if ep_A_box_idx == ep_B_box_idx: # Don't connect points on the same box
-            continue
-
-        dist_sq = (ep_A_coord[0] - ep_B_coord[0])**2 + (ep_A_coord[1] - ep_B_coord[1])**2
-        if dist_sq < min_dist_sq:
-            min_dist_sq = dist_sq
-            best_ep_B_idx = j
-
-    if best_ep_B_idx != -1:
-        ep_B_best_data = endpoints_data[best_ep_B_idx]
-        ep_B_best_coord = ep_B_best_data['coord']
-
-        pt1 = (int(ep_A_coord[0]), int(ep_A_coord[1]))
-        pt2 = (int(ep_B_best_coord[0]), int(ep_B_best_coord[1]))
-        cv2.line(output_image, pt1, pt2, COLOR_CONNECTIONS, 1)
-
-        is_endpoint_connected[i] = True
-        is_endpoint_connected[best_ep_B_idx] = True
-        connections_made +=1
-
-print(f"Made {connections_made} connections between midpoints.")
 
 # --- 7. Draw Robot Trajectory ---
 if x_traj.size > 0:
@@ -251,13 +177,13 @@ if x_traj.size > 0:
             cv2.circle(output_image, (traj_col, traj_row), radius=1, color=COLOR_TRAJECTORY, thickness=-1)
 
 # --- 8. Display and Save ---
-WINDOW_NAME = "Lidar Map with Walls, Connections, and Trajectory"
-cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL) # Makes window resizable
+WINDOW_NAME = "Skeletonized Map with Endpoints and Trajectory"
+cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
 cv2.imshow(WINDOW_NAME, output_image)
 print("Press any key to close the map window.")
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-output_filename = "slam_like_map_with_connections.png"
+output_filename = "skeleton_map_with_endpoints.png"
 cv2.imwrite(output_filename, output_image)
 print(f"Map saved as {output_filename}")
