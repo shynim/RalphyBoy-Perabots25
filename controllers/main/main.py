@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import os
 from datetime import datetime
-from cost_map import generate_cost_map, MAP_ORIGIN_X_WORLD, MAP_ORIGIN_Y_WORLD
+from cost_map import generate_cost_map, adjust_trajectory_to_cost_map, MAP_ORIGIN_X_WORLD, MAP_ORIGIN_Y_WORLD, CELL_SIZE_METERS, GRID_DIM
 
 
 TIME_STEP = 32
@@ -236,8 +236,19 @@ while robot.step(TIME_STEP) != -1:
     # Convert masks to BGR for consistent stacking
     black_bgr = cv2.cvtColor(black_mask, cv2.COLOR_GRAY2BGR)
     # Replace red_bgr with the cost map
-    cost_map_image = generate_cost_map(x_traj, y_traj, all_lidar_points[0], all_lidar_points[1])
+    cost_map_image, norm_cost_map = generate_cost_map(x_traj, y_traj, all_lidar_points[0], all_lidar_points[1])
     cost_map_bgr = cv2.resize(cost_map_image, (width, height))  # resize to match camera view
+
+    adjusted_x, adjusted_y = adjust_trajectory_to_cost_map(x_traj, y_traj, norm_cost_map)
+    
+    # Overlay adjusted path in red
+    for ax_adj, ay_adj in zip(adjusted_x, adjusted_y):
+        relative_x = ax_adj - MAP_ORIGIN_X_WORLD
+        relative_y = ay_adj - MAP_ORIGIN_Y_WORLD
+        col = int(relative_x / CELL_SIZE_METERS)
+        row = GRID_DIM - 1 - int(relative_y / CELL_SIZE_METERS)
+        if 0 <= col < GRID_DIM and 0 <= row < GRID_DIM:
+            cv2.circle(cost_map_image, (col, row), radius=1, color=(0, 0, 255), thickness=-1)
 
 
     # Resize views for 2x2 layout (optional scale factor)
@@ -290,6 +301,20 @@ while robot.step(TIME_STEP) != -1:
     vy = v * math.sin(robot_pose[2])
     robot_pose[0] += vx * dt
     robot_pose[1] += vy * dt
+
+    # Check for loop closure
+    if len(x_traj) > 30:  # ensure some data is collected first
+        dx = robot_pose[0] - x_traj[0]
+        dy = robot_pose[1] - y_traj[0]
+        dist_from_start = math.sqrt(dx**2 + dy**2)
+        total_traveled = sum(
+            math.sqrt((x_traj[i] - x_traj[i-1])**2 + (y_traj[i] - y_traj[i-1])**2)
+            for i in range(1, len(x_traj))
+        )
+        if dist_from_start < 0.1 and total_traveled > 1.0:
+            print("[INFO] Loop completed. Stopping data collection.")
+            break
+
 
     lidar_data = lidar.getRangeImage()
     update_plot(robot_pose[0], robot_pose[1], robot_pose[2], lidar_data)

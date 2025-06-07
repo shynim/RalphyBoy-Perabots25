@@ -202,4 +202,35 @@ def generate_cost_map(x_traj, y_traj, lidar_x_world, lidar_y_world):
         if 0 <= traj_col < GRID_DIM and 0 <= traj_row < GRID_DIM:
             cv2.circle(output_image, (traj_col, traj_row), radius=1, color=COLOR_TRAJECTORY, thickness=-1)
 
-    return output_image
+    return output_image, norm_dist_transform
+
+def adjust_trajectory_to_cost_map(x_traj, y_traj, norm_cost_map):
+    adjusted_x, adjusted_y = [], []
+    for tx, ty in zip(x_traj, y_traj):
+        relative_tx = tx - MAP_ORIGIN_X_WORLD
+        relative_ty = ty - MAP_ORIGIN_Y_WORLD
+        col = int(relative_tx / CELL_SIZE_METERS)
+        row = GRID_DIM - 1 - int(relative_ty / CELL_SIZE_METERS)
+
+        if 0 <= row < GRID_DIM and 0 <= col < GRID_DIM:
+            min_cost = norm_cost_map[row, col]
+            best_row, best_col = row, col
+
+            for dr in range(-2, 3):
+                for dc in range(-2, 3):
+                    r, c = row + dr, col + dc
+                    if 0 <= r < GRID_DIM and 0 <= c < GRID_DIM:
+                        cost = norm_cost_map[r, c]
+                        if cost > min_cost:  # we want to move toward higher distance from walls
+                            min_cost = cost
+                            best_row, best_col = r, c
+
+            world_x = MAP_ORIGIN_X_WORLD + best_col * CELL_SIZE_METERS
+            world_y = MAP_ORIGIN_Y_WORLD + (GRID_DIM - 1 - best_row) * CELL_SIZE_METERS
+            adjusted_x.append(world_x)
+            adjusted_y.append(world_y)
+        else:
+            adjusted_x.append(tx)
+            adjusted_y.append(ty)
+
+    return adjusted_x, adjusted_y
