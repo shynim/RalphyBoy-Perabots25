@@ -161,13 +161,45 @@ if x_traj.size > 0:
             cv2.circle(output_image, (traj_col, traj_row), radius=1, color=COLOR_TRAJECTORY, thickness=-1)
 
 # --- 7. Display and Save ---
-WINDOW_NAME = "Lidar Cost Map with Trajectory"
-cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL) # Makes window resizable
-cv2.imshow(WINDOW_NAME, output_image)
-print("Press any key to close the map window.")
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    WINDOW_NAME = "Lidar Cost Map with Trajectory"
+    cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL) # Makes window resizable
+    cv2.imshow(WINDOW_NAME, output_image)
+    print("Press any key to close the map window.")
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
+    output_filename = "lidar_cost_map.png"
+    cv2.imwrite(output_filename, output_image)
+    print(f"Cost map saved as {output_filename}")
+    
+def generate_cost_map(x_traj, y_traj, lidar_x_world, lidar_y_world):
+    grid_map = np.zeros((GRID_DIM, GRID_DIM), dtype=np.uint8)
+    for wx, wy in zip(lidar_x_world, lidar_y_world):
+        relative_x = wx - MAP_ORIGIN_X_WORLD
+        relative_y = wy - MAP_ORIGIN_Y_WORLD
+        grid_col = int(relative_x / CELL_SIZE_METERS)
+        grid_row = GRID_DIM - 1 - int(relative_y / CELL_SIZE_METERS)
+        if 0 <= grid_col < GRID_DIM and 0 <= grid_row < GRID_DIM:
+            grid_map[grid_row, grid_col] = 255
 
-output_filename = "lidar_cost_map.png"
-cv2.imwrite(output_filename, output_image)
-print(f"Cost map saved as {output_filename}")
+    inverted_grid_map = cv2.bitwise_not(grid_map)
+    dist_transform = cv2.distanceTransform(inverted_grid_map, cv2.DIST_L2, 5)
+    norm_dist_transform = np.zeros_like(dist_transform, dtype=np.float32)
+    if np.any(dist_transform):
+        cv2.normalize(dist_transform, norm_dist_transform, 0.0, 1.0, cv2.NORM_MINMAX)
+
+    output_image = np.zeros((GRID_DIM, GRID_DIM, 3), dtype=np.uint8)
+    blue_channel = ((1.0 - norm_dist_transform**0.5) * 255.0).astype(np.uint8)
+    output_image[:, :, 0] = blue_channel
+    output_image[grid_map == 255] = COLOR_WALLS_ON_COSTMAP
+
+    for tx, ty in zip(x_traj, y_traj):
+        relative_tx = tx - MAP_ORIGIN_X_WORLD
+        relative_ty = ty - MAP_ORIGIN_Y_WORLD
+        traj_col = int(relative_tx / CELL_SIZE_METERS)
+        traj_row = GRID_DIM - 1 - int(relative_ty / CELL_SIZE_METERS)
+        if 0 <= traj_col < GRID_DIM and 0 <= traj_row < GRID_DIM:
+            cv2.circle(output_image, (traj_col, traj_row), radius=1, color=COLOR_TRAJECTORY, thickness=-1)
+
+    return output_image

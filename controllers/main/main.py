@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import os
 from datetime import datetime
+from cost_map import generate_cost_map, MAP_ORIGIN_X_WORLD, MAP_ORIGIN_Y_WORLD
+
 
 TIME_STEP = 32
 
@@ -146,6 +148,8 @@ def detect_red_lines(image):
     return red_mask, contours
 
 cv2.namedWindow("Webots Vision Grid", cv2.WINDOW_NORMAL)
+cv2.namedWindow("Cost Map", cv2.WINDOW_NORMAL)
+
 
 MAXSPEED = 10.0
 BASESPEED = 6.0
@@ -285,6 +289,10 @@ while robot.step(TIME_STEP) != -1:
 
     lidar_data = lidar.getRangeImage()
     update_plot(robot_pose[0], robot_pose[1], robot_pose[2], lidar_data)
+    # Generate and show cost map
+    cost_map_image = generate_cost_map(x_traj, y_traj, all_lidar_points[0], all_lidar_points[1])
+    cv2.imshow("Cost Map", cost_map_image)
+
 
     for ind in range(2):
         last_ps_values[ind] = ps_values[ind]
