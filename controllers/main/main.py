@@ -148,7 +148,7 @@ def detect_red_lines(image):
     return red_mask, contours
 
 cv2.namedWindow("Webots Vision Grid", cv2.WINDOW_NORMAL)
-cv2.namedWindow("Cost Map", cv2.WINDOW_NORMAL)
+# cv2.namedWindow("Cost Map", cv2.WINDOW_NORMAL)
 
 
 MAXSPEED = 10.0
@@ -235,17 +235,21 @@ while robot.step(TIME_STEP) != -1:
 
     # Convert masks to BGR for consistent stacking
     black_bgr = cv2.cvtColor(black_mask, cv2.COLOR_GRAY2BGR)
-    red_bgr = cv2.cvtColor(red_mask, cv2.COLOR_GRAY2BGR)
+    # Replace red_bgr with the cost map
+    cost_map_image = generate_cost_map(x_traj, y_traj, all_lidar_points[0], all_lidar_points[1])
+    cost_map_bgr = cv2.resize(cost_map_image, (width, height))  # resize to match camera view
+
 
     # Resize views for 2x2 layout (optional scale factor)
     scale = 2  # Increase for bigger display
     view_size = (width * scale, height * scale)
     views = [
-        cv2.resize(img_bgr, view_size),
-        cv2.resize(black_bgr, view_size),
-        cv2.resize(red_bgr, view_size),
-        cv2.resize(overlay, view_size)
+        cv2.resize(img_bgr, view_size),         # Top-left: original camera
+        cv2.resize(black_bgr, view_size),       # Top-right: black mask
+        cv2.resize(overlay, view_size),          # Bottom-left: overlay
+        cv2.resize(cost_map_bgr, view_size)    # Bottom-right: now cost map
     ]
+
 
     # Arrange into 2x2 grid
     top_row = np.hstack((views[0], views[1]))
@@ -290,8 +294,8 @@ while robot.step(TIME_STEP) != -1:
     lidar_data = lidar.getRangeImage()
     update_plot(robot_pose[0], robot_pose[1], robot_pose[2], lidar_data)
     # Generate and show cost map
-    cost_map_image = generate_cost_map(x_traj, y_traj, all_lidar_points[0], all_lidar_points[1])
-    cv2.imshow("Cost Map", cost_map_image)
+    # cost_map_image = generate_cost_map(x_traj, y_traj, all_lidar_points[0], all_lidar_points[1])
+    # cv2.imshow("Cost Map", cost_map_image)
 
 
     for ind in range(2):
