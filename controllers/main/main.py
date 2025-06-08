@@ -311,7 +311,7 @@ while robot.step(TIME_STEP) != -1:
             math.sqrt((x_traj[i] - x_traj[i-1])**2 + (y_traj[i] - y_traj[i-1])**2)
             for i in range(1, len(x_traj))
         )
-        if dist_from_start < 0.1 and total_traveled > 1.0:
+        if dist_from_start < 0.02 and total_traveled > 1.0:
             print("[INFO] Loop completed. Stopping data collection.")
             break
 
